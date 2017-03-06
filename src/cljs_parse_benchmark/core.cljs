@@ -2,58 +2,84 @@
   (:require
     [clojure.walk :as walk]
     [cljs.reader :as reader]
+    [cljsjs.benchmark :as benchmark]
+    [cljsjs.platform :as platform]
     [cognitect.transit :as transit]
     [hoplon.core :as h :refer [defelem case-tpl cond-tpl for-tpl if-tpl when-tpl]]
     [hoplon.jquery]
-    [javelin.core :as j :refer [cell] :refer-macros [cell= defc defc=]]
-    [taoensso.encore :as encore]))
+    [javelin.core :as j :refer [cell] :refer-macros [cell= defc defc=]]))
 
 (defonce results
   (cell nil))
 
-(defonce rounds
-  (cell 100))
+(def transit-reader-json*
+  (transit/reader :json))
+
+(def transit-writer-json*
+  (transit/writer :json))
+
+(def transit-writer-json-verbose*
+  (transit/writer :json-verbose))
+
+(defn transit-reader
+  [transit-string]
+  (transit/read transit-reader-json* transit-string))
+
+(defn transit-writer
+  [data]
+  (transit/write transit-writer-json* data))
+
+(defn transit-verbose-writer
+  [data]
+  (transit/write transit-writer-json-verbose* data))
+
+(defn edn-writer
+  [data]
+  (pr-str data))
+
+(defn edn-reader
+  [edn-string]
+  (reader/read-string edn-string))
+
+(defn json-writer
+  [data]
+  (js/JSON.stringify (clj->js data)))
+
+(defn json-reader
+  [json-string]
+  (js->clj (js/JSON.parse json-string)))
+
+(defn json-reader-kw
+  [json-string]
+  (js->clj (js/JSON.parse json-string) :keywordize-keys true))
 
 (defn run
   [data]
-  (let [r (transit/reader :json)
-
-        w (transit/writer :json-verbose)
-        wt (transit/writer :json)
-
-        edn-writer #(pr-str %)
-        edn-reader #(reader/read-string %)
-
-        transit-writer #(transit/write wt %)
-        transit-verbose-writer #(transit/write w %)
-        transit-reader #(transit/read r %)
-
-        json-writer #(js/JSON.stringify (clj->js %))
-        json-reader #(js->clj (js/JSON.parse %))
-        json-reader-kw #(js->clj (js/JSON.parse %) :keywordize-keys true)
-
-        kw-keys #(walk/keywordize-keys %)
-        str-keys #(walk/stringify-keys %)
-
-        str-keys-data (str-keys data)
+  (let [str-keys-data (walk/stringify-keys data)
         edn-data (edn-writer data)
         transit-data (transit-writer data)
         transit-verbose-data (transit-verbose-writer str-keys-data)
         json-data (json-writer data)
-
-        rounds @rounds]
-    {:size {:edn (count edn-data)
-            :transit (count transit-data)
-            :transit-json (count transit-verbose-data)
-            :json (count json-data)}
-     :time
-     {:transit-json (= transit-verbose-data json-data)
-      :edn (encore/round (encore/qbench rounds (edn-reader edn-data)))
-      :transit (encore/round (encore/qbench rounds (transit-reader transit-data)))
-      :transit-verbose (encore/round (encore/qbench rounds (transit-reader transit-verbose-data)))
-      :json (encore/round (encore/qbench rounds (json-reader json-data)))
-      :json-kw (encore/round (encore/qbench rounds (json-reader-kw json-data)))
-      :walk-kw (encore/round (encore/qbench rounds (kw-keys str-keys-data)))}}))
+        size {:size {:edn (count edn-data)
+                     :transit (count transit-data)
+                     :transit-json (count transit-verbose-data)
+                     :json (count json-data)}}
+        suite (js/Benchmark.Suite.)]
+    (console.log :data {:edn edn-data
+                        :transit transit-data
+                        :transit-verbose transit-verbose-data
+                        :json json-data})
+    (doto suite
+      (.add "transit" (fn [] (transit-reader transit-data)))
+      (.add "transit-verbose" (fn [] (transit-reader transit-verbose-data)))
+      (.add "edn" (fn [] (edn-reader edn-data)))
+      (.add "json" (fn [] (json-reader json-data)))
+      (.add "json-kw" (fn [] (json-reader-kw json-data)))
+      (.on "cycle" (fn [event]
+                     (console.log event.target)
+                     (swap! results assoc event.target.name event.target)))
+      (.on "complete" (fn [] (console.log suite)))
+      (.run #js {:async true}))))
 
 (defn benchmark
   []
@@ -553,49 +579,51 @@
             :vertical_traffic_light "https://assets-cdn.github.com/images/icons/emoji/unicode/1f6a6.png?v7",
             :family_man_boy_boy "https://assets-cdn.github.com/images/icons/emoji/unicode/1f468-1f466-1f466.png?v7",
             :white_medium_square "https://assets-cdn.github.com/images/icons/emoji/unicode/25fb.png?v7",
-            :art "https://assets-cdn.github.com/images/icons/emoji/unicode/1f3a8.png?v7",
-            :shirt "https://assets-cdn.github.com/images/icons/emoji/unicode/1f455.png?v7",
-            :man_cook "https://assets-cdn.github.com/images/icons/emoji/unicode/1f468-1f373.png?v7",
-            :jordan "https://assets-cdn.github.com/images/icons/emoji/unicode/1f1ef-1f1f4.png?v7",
-            :film_projector "https://assets-cdn.github.com/images/icons/emoji/unicode/1f4fd.png?v7",
-            :cucumber "https://assets-cdn.github.com/images/icons/emoji/unicode/1f952.png?v7",
-            :oden "https://assets-cdn.github.com/images/icons/emoji/unicode/1f362.png?v7",
-            :woman_artist "https://assets-cdn.github.com/images/icons/emoji/unicode/1f469-1f3a8.png?v7",
-            :sri_lanka "https://assets-cdn.github.com/images/icons/emoji/unicode/1f1f1-1f1f0.png?v7",
-            :white_flower "https://assets-cdn.github.com/images/icons/emoji/unicode/1f4ae.png?v7",
-            :poultry_leg "https://assets-cdn.github.com/images/icons/emoji/unicode/1f357.png?v7",
-            :pause_button "https://assets-cdn.github.com/images/icons/emoji/unicode/23f8.png?v7",
-            :speech_balloon "https://assets-cdn.github.com/images/icons/emoji/unicode/1f4ac.png?v7",
-            :basecamp "https://assets-cdn.github.com/images/icons/emoji/basecamp.png?v7",
-            :bento "https://assets-cdn.github.com/images/icons/emoji/unicode/1f371.png?v7",
-            :man_scientist "https://assets-cdn.github.com/images/icons/emoji/unicode/1f468-1f52c.png?v7",
-            :tokyo_tower "https://assets-cdn.github.com/images/icons/emoji/unicode/1f5fc.png?v7",
-            :honduras "https://assets-cdn.github.com/images/icons/emoji/unicode/1f1ed-1f1f3.png?v7",
-            :gem "https://assets-cdn.github.com/images/icons/emoji/unicode/1f48e.png?v7",
-            :family_man_woman_girl_boy "https://assets-cdn.github.com/images/icons/emoji/unicode/1f468-1f469-1f467-1f466.png?v7",
-            :tumbler_glass "https://assets-cdn.github.com/images/icons/emoji/unicode/1f943.png?v7",
-            :kiwi_fruit "https://assets-cdn.github.com/images/icons/emoji/unicode/1f95d.png?v7",
-            :dog "https://assets-cdn.github.com/images/icons/emoji/unicode/1f436.png?v7",
-            :unamused "https://assets-cdn.github.com/images/icons/emoji/unicode/1f612.png?v7",
-            :solomon_islands "https://assets-cdn.github.com/images/icons/emoji/unicode/1f1f8-1f1e7.png?v7",
-            :womans_hat "https://assets-cdn.github.com/images/icons/emoji/unicode/1f452.png?v7",
-            :marshall_islands "https://assets-cdn.github.com/images/icons/emoji/unicode/1f1f2-1f1ed.png?v7",
-            :rainbow "https://assets-cdn.github.com/images/icons/emoji/unicode/1f308.png?v7",
-            :file_folder "https://assets-cdn.github.com/images/icons/emoji/unicode/1f4c1.png?v7",
-            :trinidad_tobago "https://assets-cdn.github.com/images/icons/emoji/unicode/1f1f9-1f1f9.png?v7",
-            :person_with_pouting_face "https://assets-cdn.github.com/images/icons/emoji/unicode/1f64e.png?v7",
-            :cry "https://assets-cdn.github.com/images/icons/emoji/unicode/1f622.png?v7",
-            :lizard "https://assets-cdn.github.com/images/icons/emoji/unicode/1f98e.png?v7"}
+            :art "https://assets-cdn.github.com/images/icons/emoji/unicode/1f3a8.png?v7"}
         data [d0 d1 d2 d3 d4]]
-    (reset! results (mapv run data))))
+    (run d0)))
+
+(defonce running? (cell false))
 
 (defn show
   [results]
   (h/div
-    (h/h1
-      :click #(do (console.log :benchmark) (benchmark))
-      "Clojurescript parse benchmark")
-    (h/text "~{(pr-str results)}")))
+    :id "app"
+    (h/h1 "Clojurescript parse benchmark")
+    (h/button :click #(do
+                        (reset! running? true)
+                        (benchmark)
+                        (reset! running? false))
+      "Run bench")
+    (h/p
+      :toggle running?
+      "Running")
+    (h/table
+      (h/thead
+        (h/tr
+          (h/th "type")
+          (h/th "description")
+          (h/th "plataform")
+          (h/th "rme")
+          (h/th "samples")
+          (h/th "cycles")
+          (h/th "ops/sec")
+          (h/th "test count")
+          (h/th "error")
+          ))
+      (h/tbody
+        (for-tpl [[k result] results]
+                 (h/tr
+                   (h/td (h/text "~{k}"))
+                   (h/td (h/text "~(.toString result)"))
+                   (h/td (h/text "~(.-plataform result)"))
+                   (h/td (h/text "~(.-rme (.-stats result))"))
+                   (h/td (h/text "~(.-length (.-sample (.-stats result)))"))
+                   (h/td (h/text "~(.-cycles result)"))
+                   (h/td (h/text "~(.-hz result)"))
+                   (h/td (h/text "~(.-count result)"))
+                   (h/td (h/text "~(.-error result)"))
+                   ))))))
 
 (defn reload []
   (js/jQuery

@@ -30,8 +30,8 @@
                   ;; Serialization
                   [com.cognitect/transit-cljs "0.8.239"]
 
-                  ;; util functions
-                  [com.taoensso/encore "2.89.0"]]
+                  ;; Benchmark
+                  [cljsjs/benchmark "2.1.0-1"]]
   :source-paths #{"src"}
   :asset-paths #{"assets"})
 
