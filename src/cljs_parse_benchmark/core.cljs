@@ -598,12 +598,12 @@
     (h/p
       :toggle running?
       "Running")
+    (h/p (.-description (.-platform js/Benchmark)))
     (h/table
       (h/thead
         (h/tr
           (h/th "type")
           (h/th "description")
-          (h/th "plataform")
           (h/th "rme")
           (h/th "samples")
           (h/th "cycles")
@@ -616,11 +616,10 @@
                  (h/tr
                    (h/td (h/text "~{k}"))
                    (h/td (h/text "~(.toString result)"))
-                   (h/td (h/text "~(.-plataform result)"))
-                   (h/td (h/text "~(.-rme (.-stats result))"))
+                   (h/td (h/text "~(.toFixed (.-rme (.-stats result)) 2)"))
                    (h/td (h/text "~(.-length (.-sample (.-stats result)))"))
                    (h/td (h/text "~(.-cycles result)"))
-                   (h/td (h/text "~(.-hz result)"))
+                   (h/td (h/text "~(js/Benchmark.formatNumber (js/Math.floor (.-hz result)))"))
                    (h/td (h/text "~(.-count result)"))
                    (h/td (h/text "~(.-error result)"))
                    ))))))
