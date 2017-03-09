@@ -77,7 +77,11 @@
       (.add "json-kw" (fn [] (json-reader-kw json-data)))
       (.on "cycle" (fn [event]
                      (console.log event.target)
-                     (swap! results assoc event.target.name event.target)))
+                     (swap! results assoc event.target.name (let [result event.target]
+                                                              {:name (.-name result)
+                                                               :ops-sec (js/Math.floor (.-hz result))
+                                                               :rme (.toFixed (.-rme (.-stats result)) 2)
+                                                               :samples (.-length (.-sample (.-stats result)))}))))
       (.on "complete" (fn [] (console.log suite)))
       (.run #js {:async true}))))
 
@@ -585,44 +589,49 @@
 
 (defonce running? (cell false))
 
+(defn results-table
+  [results]
+  (h/table
+    (h/thead
+      (h/tr
+        (h/th "Name")
+        (h/th "ops/sec")
+        (h/th "rme")
+        (h/th "samples")
+        (h/th "relative")))
+    (h/tbody
+      (for-tpl [{:keys [name ops-sec rme samples]} (cell= (sort-by :ops-sec > (vals results)))]
+               (let [max-ops-sec (cell= (apply max (map :ops-sec (vals results))))]
+               (h/tr
+                 (h/td :css {:padding-left "10px"
+                             :padding-right "10px"}
+                   (h/text "~{name}"))
+                 (h/td :css {:text-align "right"
+                             :padding-left "10px"
+                             :padding-right "10px"}
+                   (h/text "~(js/Benchmark.formatNumber ops-sec)"))
+                 (h/td :css {:text-align "right"
+                             :padding-left "10px"
+                             :padding-right "10px"}
+                   (h/text "±~{rme}%"))
+                 (h/td :css {:text-align "right"
+                             :padding-left "10px"
+                             :padding-right "10px"}
+                   (h/text "~{samples}"))
+                 (h/td :css {:text-align "right"
+                             :padding-left "10px"
+                             :padding-right "10px"}
+                   (h/text "~(.toFixed  (* 100 (/ ops-sec max-ops-sec)) 2)%"))))))))
+
 (defn show
   [results]
   (h/div
     :id "app"
     (h/h1 "Clojurescript parse benchmark")
-    (h/button :click #(do
-                        (reset! running? true)
-                        (benchmark)
-                        (reset! running? false))
+    (h/button :click #(benchmark)
       "Run bench")
-    (h/p
-      :toggle running?
-      "Running")
     (h/p (.-description (.-platform js/Benchmark)))
-    (h/table
-      (h/thead
-        (h/tr
-          (h/th "type")
-          (h/th "description")
-          (h/th "rme")
-          (h/th "samples")
-          (h/th "cycles")
-          (h/th "ops/sec")
-          (h/th "test count")
-          (h/th "error")
-          ))
-      (h/tbody
-        (for-tpl [[k result] results]
-                 (h/tr
-                   (h/td (h/text "~{k}"))
-                   (h/td (h/text "~(.toString result)"))
-                   (h/td (h/text "~(.toFixed (.-rme (.-stats result)) 2)"))
-                   (h/td (h/text "~(.-length (.-sample (.-stats result)))"))
-                   (h/td (h/text "~(.-cycles result)"))
-                   (h/td (h/text "~(js/Benchmark.formatNumber (js/Math.floor (.-hz result)))"))
-                   (h/td (h/text "~(.-count result)"))
-                   (h/td (h/text "~(.-error result)"))
-                   ))))))
+    (results-table results)))
 
 (defn reload []
   (js/jQuery
