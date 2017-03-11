@@ -33,7 +33,7 @@
                   [fipp "0.6.8"]
 
                   ;; Benchmark
-                  [cljsjs/benchmark "2.1.0-1"]]
+                  [cljsjs/benchmark "2.1.0-2"]]
   :source-paths #{"src"}
   :asset-paths #{"assets"})
 
@@ -62,6 +62,7 @@
   "Build cljs-parse-benchmark for production deployment."
   []
   (comp
+    (sift :add-jar {'mynomoto/hoplon-spectre.css #"spectre\.min\.css"})
     (cljs
       :optimizations :advanced
       :compiler-options {:parallel-build true
