@@ -21,7 +21,6 @@
                   [hoplon/javelin "3.9.0" :scope "compile"]
                   [mynomoto/hoplon-spectre.css "0.1.32-0" :scope "compile"]
 
-
                   ;; Better devtools for Clojurescript
                   [binaryage/devtools "0.9.1" :scope "compile"]
                   [binaryage/dirac "1.1.5" :scope "compile"]
@@ -29,6 +28,9 @@
 
                   ;; Serialization
                   [com.cognitect/transit-cljs "0.8.239"]
+
+                  ;; Pprint
+                  [fipp "0.6.8"]
 
                   ;; Benchmark
                   [cljsjs/benchmark "2.1.0-1"]]

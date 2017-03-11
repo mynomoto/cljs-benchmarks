@@ -1,6 +1,7 @@
 (ns cljs-parse-benchmark.core
   (:require
     [clojure.walk :as walk]
+    [fipp.edn :as fipp]
     [cljs.reader :as reader]
     [cljsjs.benchmark :as benchmark]
     [cljsjs.platform :as platform]
@@ -54,7 +55,7 @@
   [json-string]
   (js->clj (js/JSON.parse json-string) :keywordize-keys true))
 
-(defn run
+(defn run-read-benchmark
   [data* results k]
   (let [data (get data* k)
         str-keys-data (walk/stringify-keys data)
@@ -67,6 +68,7 @@
                      :transit-json (count transit-verbose-data)
                      :json (count json-data)}}
         suite (js/Benchmark.Suite.)]
+    (swap! results assoc-in [:running k] true)
     (doto suite
       (.add "transit" (fn [] (transit-reader transit-data)))
       (.add "transit-verbose" (fn [] (transit-reader transit-verbose-data)))
@@ -79,6 +81,7 @@
                                                                       :ops-sec (js/Math.floor (.-hz result))
                                                                       :rme (.toFixed (.-rme (.-stats result)) 2)
                                                                       :samples (.-length (.-sample (.-stats result)))}))))
+      (.on "complete" (fn [] (swap! results assoc-in [:running k] false)))
       (.run #js {:async true}))))
 
 (def data
@@ -614,22 +617,42 @@
   [data results k title]
   (h/div
     (h/h3 title)
-    (h/pre (pr-str (get data k)))
-    (h/button :click #(run data results k)
+    (s/button
+      :click #(swap! results update-in [:show-data k] not)
+      "Show data")
+    (h/pre
+      :toggle (cell= (get-in results [:show-data k]))
+      (with-out-str (fipp/pprint (get data k))))
+    (s/button-primary :click #(run-read-benchmark data results k)
       "Run bench")
+    (h/h4
+      :toggle (cell= (get-in results [:running k]))
+      "Running benchmark")
     (results-table (cell= (get results k)))))
+
+(defn parse-data
+  [data results]
+  (h/div
+    (h/h2 "Parse data benchmarks")
+    (benchmark data results :d0 "Tiny data")
+    (benchmark data results :d1 "Really Small data")
+    (benchmark data results :d2 "Small data")
+    (benchmark data results :d3 "Data")
+    (benchmark data results :d5 "Large Data")
+    (h/p (.-description (.-platform js/Benchmark)))))
+
+(defn index
+  [data results]
+  (h/div
+    :id "app"
+    (h/h1 "ClojureScript benchmarks")
+    (parse-data data results)))
 
 (defn show
   [data results]
   (h/div
     :id "app"
-    (h/h1 "Clojurescript benchmark")
-    (h/h2 (.-description (.-platform js/Benchmark)))
-    (benchmark data results :d0 "Tiny data")
-    (benchmark data results :d1 "Really Small data")
-    (benchmark data results :d2 "Small data")
-    (benchmark data results :d3 "Data")
-    (benchmark data results :d5 "Large Data")))
+    (index data results)))
 
 (defn reload []
   (js/jQuery
