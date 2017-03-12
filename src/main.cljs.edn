@@ -1,2 +1,2 @@
-{:require [cljs-parse-benchmark.core]
- :init-fns [cljs-parse-benchmark.core/init!]}
+{:require [cljs-benchmarks.core]
+ :init-fns [cljs-benchmarks.core/init!]}

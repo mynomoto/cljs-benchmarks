@@ -1,7 +1,7 @@
 (task-options!
-  pom {:project     'github-client
+  pom {:project     'cljs-benchmarks
        :version     "0.0.1"
-       :description "A github client built with Hoplon"
+       :description "ClojureScript benchmarks"
        :license     {"EPL" "http://www.eclipse.org/legal/epl-v10.html"}})
 
 (set-env!
@@ -10,6 +10,7 @@
                   ;; Clojurescript
                   [adzerk/boot-cljs "1.7.228-2" :scope "compile"]
                   [org.clojure/clojurescript "1.9.473" :scope "compile"]
+
                   ;; Auto reload
                   [adzerk/boot-reload "0.5.1" :scope "compile"]
 
@@ -25,6 +26,9 @@
                   [binaryage/devtools "0.9.1" :scope "compile"]
                   [binaryage/dirac "1.1.5" :scope "compile"]
                   [powerlaces/boot-cljs-devtools "0.2.0" :scope "compile"]
+
+                  ;; Utils
+                  [benefactor "0.0.1-SNAPSHOT"]
 
                   ;; Serialization
                   [com.cognitect/transit-cljs "0.8.239"]
@@ -45,21 +49,21 @@
 
 (deftask dev
   []
-  "Build github-clieent for development."
+  "Build cljs-benchmarks for development."
   (comp
     (sift :add-jar {'mynomoto/hoplon-spectre.css #"spectre\.min\.css"})
     (watch)
     (speak)
     (cljs-devtools)
     (dirac)
-    (reload :on-jsload 'cljs-parse-benchmark.core/reload)
+    (reload :on-jsload 'cljs-benchmarks.core/reload)
     (cljs
       :optimizations :none
       :compiler-options {:parallel-build true})
     (serve :port 8000)))
 
 (deftask prod
-  "Build cljs-parse-benchmark for production deployment."
+  "Build cljs-benchmarks for production deployment."
   []
   (comp
     (sift :add-jar {'mynomoto/hoplon-spectre.css #"spectre\.min\.css"})
