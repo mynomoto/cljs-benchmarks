@@ -636,5 +636,5 @@
     (benchmark data results :d1 "Really Small data")
     (benchmark data results :d2 "Small data")
     (benchmark data results :d3 "Data")
-    (benchmark data results :d5 "Large Data")
+    (benchmark data results :d4 "Large Data")
     (h/p (.-description (.-platform js/Benchmark)))))
