@@ -1,4 +1,4 @@
-(ns cljs-benchmarks.benchmarks.parse-data
+(ns cljs-benchmarks.benchmarks.read-data
   (:require
     [clojure.walk :as walk]
     [fipp.edn :as fipp]
@@ -54,19 +54,15 @@
   (js->clj (js/JSON.parse json-string) :keywordize-keys true))
 
 (defn run-read-benchmark
-  [data* results k]
+  [data* results type k]
   (let [data (get data* k)
         str-keys-data (walk/stringify-keys data)
         edn-data (edn-writer data)
         transit-data (transit-writer data)
         transit-verbose-data (transit-verbose-writer str-keys-data)
         json-data (json-writer data)
-        size {:size {:edn (count edn-data)
-                     :transit (count transit-data)
-                     :transit-json (count transit-verbose-data)
-                     :json (count json-data)}}
         suite (js/Benchmark.Suite.)]
-    (swap! results assoc-in [:running k] true)
+    (swap! results assoc-in [type :running k] true)
     (doto suite
       (.add "transit" (fn [] (transit-reader transit-data)))
       (.add "transit-verbose" (fn [] (transit-reader transit-verbose-data)))
@@ -74,12 +70,12 @@
       (.add "json" (fn [] (json-reader json-data)))
       (.add "json-kw" (fn [] (json-reader-kw json-data)))
       (.on "cycle" (fn [event]
-                     (swap! results assoc-in [k event.target.name] (let [result event.target]
-                                                                     {:name (.-name result)
-                                                                      :ops-sec (js/Math.floor (.-hz result))
-                                                                      :rme (.toFixed (.-rme (.-stats result)) 2)
-                                                                      :samples (.-length (.-sample (.-stats result)))}))))
-      (.on "complete" (fn [] (swap! results assoc-in [:running k] false)))
+                     (swap! results assoc-in [type k event.target.name] (let [result event.target]
+                                                                          {:name (.-name result)
+                                                                           :ops-sec (js/Math.floor (.-hz result))
+                                                                           :rme (.toFixed (.-rme (.-stats result)) 2)
+                                                                           :samples (.-length (.-sample (.-stats result)))}))))
+      (.on "complete" (fn [] (swap! results assoc-in [type :running k] false)))
       (.run #js {:async true}))))
 
 (def data
@@ -612,29 +608,29 @@
                    (h/text "~(.toFixed  (* 100 (/ ops-sec max-ops-sec)) 2)%"))))))))
 
 (defn benchmark
-  [data results k title]
+  [data results type k title]
   (h/div
     (h/h3 title)
     (s/button
-      :click #(swap! results update-in [:show-data k] not)
+      :click #(swap! results update-in [type :show-data k] not)
       "Show data")
     (h/pre
-      :toggle (cell= (get-in results [:show-data k]))
+      :toggle (cell= (get-in results [type :show-data k]))
       (with-out-str (fipp/pprint (get data k))))
-    (s/button-primary :click #(run-read-benchmark data results k)
+    (s/button-primary :click #(run-read-benchmark data results type k)
       "Run bench")
     (h/h4
-      :toggle (cell= (get-in results [:running k]))
+      :toggle (cell= (get-in results [type :running k]))
       "Running benchmark")
-    (results-table (cell= (get results k)))))
+    (results-table (cell= (get-in results [type k])))))
 
 (defn show
   [data results]
   (h/div
-    (h/h2 "Parse data benchmarks")
-    (benchmark data results :d0 "Tiny data")
-    (benchmark data results :d1 "Really Small data")
-    (benchmark data results :d2 "Small data")
-    (benchmark data results :d3 "Data")
-    (benchmark data results :d4 "Large Data")
+    (h/h2 "Read data benchmarks")
+    (benchmark data results :read :d0 "Tiny data")
+    (benchmark data results :read :d1 "Really Small data")
+    (benchmark data results :read :d2 "Small data")
+    (benchmark data results :read :d3 "Data")
+    (benchmark data results :read :d4 "Large Data")
     (h/p (.-description (.-platform js/Benchmark)))))

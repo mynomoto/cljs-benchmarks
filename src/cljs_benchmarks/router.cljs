@@ -6,7 +6,8 @@
   ["" [["" :index]
        ["/"
         [["" :index]
-         ["parse-data" :parse-data]
+         ["read-data" :read-data]
+         ["write-data" :write-data]
          [true :not-found]]]]])
 
 (defn update-route

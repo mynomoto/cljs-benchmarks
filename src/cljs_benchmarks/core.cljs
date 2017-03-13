@@ -1,7 +1,8 @@
 (ns cljs-benchmarks.core
   (:require
     [cljs-benchmarks.router :as router]
-    [cljs-benchmarks.benchmarks.parse-data :as parse-data]
+    [cljs-benchmarks.benchmarks.read-data :as read-data]
+    [cljs-benchmarks.benchmarks.write-data :as write-data]
     [cljs-benchmarks.benchmarks.sample-data :as sample-data]
     [cljsjs.benchmark]
     [cljsjs.platform]
@@ -17,12 +18,15 @@
   (router/init! app-state))
 
 (defn index
-  [data app-state]
+  []
   (h/div
     (h/h1 "ClojureScript benchmarks")
     (h/h2
-      (h/a :href (router/href :parse-data)
-      "Parse data benchmarks"))))
+      (h/a :href (router/href :read-data)
+      "Read data benchmarks"))
+    (h/h2
+      (h/a :href (router/href :write-data)
+      "Write data benchmarks"))))
 
 (defn show
   [data app-state]
@@ -34,10 +38,13 @@
           :column 12
           (cond-tpl
             (cell= (= :index (:handler route)))
-            (index data app-state)
+            (index)
 
-            (cell= (= :parse-data (:handler route)))
-            (parse-data/show data app-state)
+            (cell= (= :read-data (:handler route)))
+            (read-data/show data app-state)
+
+            (cell= (= :write-data (:handler route)))
+            (write-data/show data app-state)
 
             :else
             (h/div (h/h1 "Not found"))))))))
